@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>game </title>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+<script type="text/javascript" src="https://static.codehs.com/gulp/13a63166f537b173c6026636af7386f643f56279/chs-js-lib/chs.js"></script>
+
+
+<style>
+canvas {
+    border: 1px solid black;
+    display: inline-block;
+    vertical-align: top;
+}
+
+</style>
+
+</head>
+
+<body>
+
+
+
+<canvas
+width="800"
+height="400"
+class="codehs-editor-canvas"></canvas>
+
+<script>
+window.onload = function() {
+
+//making global variables and global constants
+var GUI_OFFSET;
+
+var BLOCK_WIDTH = 4;
+var WIDTH = 800;
+var HEIGHT = 400;
+var player = [];
+var playerGrid;
+var buttons = []; //contains all menus
+
+var up = false;
+var down = false;
+
+var playerSpeed = 3;
+
+var difficulty = 10;
+var startDifficulty = difficulty;
+
+var asteroids = [];
+var cannons = [];
+var bullets = [];
+
+var startGUI;
+var startText;
+var startText2;
+var startText3;
+var startText4;
+
+var paused = false;
+
+var light = 1;
+
+var PLAYER_SIZE = 10*BLOCK_WIDTH;
+
+var playerHealthBar;
+var scoreCount;
+var score = 0;
+var currencyCount;
+var currency = 400;
+var gameOver = false;
+var gameOverText;
+var GUI;
+var healthText;
+
+var menusOpen = 0;
+
+var GAME_STATE = 1;
+var MENU_STATE = 0;
+var gameState = MENU_STATE;
+var bulletDamage = 1;
+
+ 
+function start() {
+	
+    //initializes the menu
+	initializeMenu();
+	
+
+
+}
+
+function initializeMenu() {
+
+    //sets the mouse down method to be clickHandler in order to handle click events.
+	mouseDownMethod(clickHandler);
+    
+    //makes the starting background
+    startGUI = new backgroundGUI(Color.black, 0, 0, WIDTH, HEIGHT);
+
+    //makes the title 
+	var MENU = new regularText("DEEP SPACE", 20, 120, Color.red, "120px Arial");
+
+    //makes the start button
+	var startButton = new button(WIDTH/2 - 300/2, HEIGHT/2 - 80/2, 300, 80, new Color(73, 178, 103), "Start Game", "50px Arial", Color.white);
+	startButton.add();
+	buttons.push(startButton);
+    //makes starting texts like the instructions and recommendation
+    startText = new regularText("                          Instructions", 0, HEIGHT/3 * 2 + 20, Color.white, "40px Arial");
+    startText2 = new regularText("    Controls: W and S or UP arrow and DOWN arrow to move up and down.", 0, HEIGHT/3 * 2 + 60, Color.white, "24px Arial");
+    startText3 = new regularText("                    Also, Space bar is to shoot once you buy a turret.", 0, HEIGHT/3 * 2 + 85, Color.white, "24px Arial");
+    startText4 = new regularText("  RECOMMENDED: Buy a turret at the beginning of the game in order to shoot.", 0, HEIGHT/3 * 2 + 125, Color.white, "22.5px Arial");
+    
+    //sets the start button function with the appropriate function to delete the entire start screen and start the game
+	startButton.func = function() {
+
+        //deletes start screen
+		this.remove();
+        startText.destroy();
+        startText2.destroy();
+        startText3.destroy();
+        startGUI.delete();
+		removeAll();
+		buttons.pop();
+        //starts the game
+		initializeGame();
+        //plays theme music
+		var themeMusic = new Audio("https://s0.vocaroo.com/media/download_temp/Vocaroo_s0qXx1ZT7UVD.mp3");
+		themeMusic.play();
+        themeMusic.loop = true;
+
+	}
+
+}
+
+function initializeGame() {
+
+try{
+
+        //initializes the rocket using a grid
+	    playerGrid = new Grid(20, 30);
+        playerGrid.initFromArray([
+        [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,5,5,5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,5,5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,7,7,7,3,3,1,0,0,0,0,5,5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,7,7,7,6,3,3,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0],
+	    [0,0,7,7,7,3,3,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0],
+	    [0,0,0,0,0,0,0,1,2,2,2,2,2,2,2,2,2,2,4,4,4,2,2,2,2,1,1,1,0,0],
+	    [0,0,7,7,7,3,3,1,2,2,2,2,2,2,2,2,2,4,4,4,4,4,2,2,2,1,1,1,1,0],
+	    [0,7,7,7,6,3,3,1,2,2,2,2,2,2,2,2,2,4,4,4,4,4,2,2,2,1,1,1,1,1],
+	    [0,0,7,7,7,3,3,1,2,2,2,2,2,2,2,2,2,4,4,4,4,4,2,2,2,1,1,1,1,0],
+	    [0,0,0,0,0,0,0,1,2,2,2,2,2,2,2,2,2,2,4,4,4,2,2,2,2,1,1,1,0,0],
+	    [0,0,7,7,7,3,3,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,0,0,0],
+	    [0,7,7,7,6,3,3,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,0,0,0,0],
+	    [0,0,7,7,7,3,3,1,0,0,0,0,5,5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,5,5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,5,5,5,5,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+	    [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+     
+         ]);
+         //sets the offset for the top right gui so we can place items on the screen accordingly
+	     GUI_OFFSET = getWidth() - 350;
+         //sets size of the screen to be the WIDTH and HEIGHT set earlier. (just incase)
+         setSize(WIDTH, HEIGHT);
+         //sets background color to black
+	     var background = new Rectangle(WIDTH, HEIGHT);
+    	 add(background);
+         //draws the player
+	     drawRocket(playerGrid, 50, 100);
+
+         //sets the timers and gameloops to make the game work. For lag causing timers, we add setInterval to do muiltithreading.
+	     setTimer(gameLoop, 10);
+	     setInterval(asteroidLoop, 2500);
+	     setInterval(asteroidUpdate, 10);
+	     setInterval(bulletUpdate, 10);
+	     setTimer(counter, 1000);
+         
+         
+         //sets keyUp and keyDown methods appropriately (to handle user input)
+	     keyDownMethod(keyDown);
+	     keyUpMethod(keyUp);
+
+         //sets the turret button up
+	     var turretButton = new button(WIDTH-200, HEIGHT-50, 200, 40, new Color(100, 100, 100), "Turret - 200$", "24px Arial", Color.white);
+	     turretButton.func = function() {
+
+		 if (currency >= 200) {
+			new turret();
+			currency -= 200;
+			currencyCount.update(currency);
+            }
+        }
+        
+        //sets bullet button up
+        var bulletButton = new button(WIDTH-200, HEIGHT-50, 200, 40, new Color(100, 100, 100), "Bullet Dmg.-100$", "24px Arial", Color.white);
+	    bulletButton.func = function() {
+
+		if (currency >= 100) {
+			bulletDamage+= 0.5;
+			currency -= 100;
+			currencyCount.update(currency);
+            }
+        }
+        
+        //sets light button up
+        var lightButton = new button(WIDTH-200, HEIGHT-50, 200, 40, new Color(100, 100, 100), "Light Fuel-100$", "24px Arial", Color.white);
+        lightButton.func = function() {
+
+              if (currency >= 100) {
+              //increases light and updates asteroids to show it
+                   light += 0.2;
+                   for (var asteroid of asteroids) {
+                        asteroid.update(0);
+                   }
+                   currency -= 100;
+                   currencyCount.update(currency);
+              }
+        }
+    
+        //sets health button up
+        var healthButton = new button(WIDTH-200, HEIGHT-50, 200, 40, new Color(100, 100, 100), "Repair Ship-50$", "24px Arial", Color.white);
+	    healthButton.func = function() {
+		    if (currency >= 50 && playerHealthBar.width <= (playerHealthBar.initialWidth-(playerHealthBar.increment * 200))) {
+			     for (var i = 0; i<200; i++) {
+                     playerHealthBar.increase();
+                 }
+                 currency -= 50;
+                 currencyCount.update(currency);
+            }
+        }
+    
+        //sets speed button up
+        var speedButton = new button(WIDTH-200, HEIGHT-50, 200, 40, new Color(100, 100, 100), "Side Rockets-500$", "24px Arial", Color.white);
+	    speedButton.func = function() {
+		    if (currency >= 500) {
+                 playerSpeed++;
+                 currency -= 500;
+                 currencyCount.update(currency);
+            }
+        }
+	
+    //makes shop menu at bottom right to handle all buttons
+	var shop = new menu(WIDTH-200, HEIGHT-40, [turretButton, bulletButton, lightButton, healthButton, speedButton], 5, 0, Color.red, Color.white, "SHOP", "EXIT SHOP", Color.red, new Color(21, 94, 19));
+
+    //makes restart button with function
+	var restartButton = new button(WIDTH-400, HEIGHT-40, 200, 40, new Color(100, 100, 100), "RESTART", "24px Arial", Color.white);
+	restartButton.func = function() {
+		restart();
+	}
+	
+    //makes settings menu to handle restart button
+	var settings = new menu(WIDTH-400, HEIGHT-40, [restartButton], 5, 0, Color.red, Color.white, "SETTINGS", "EXIT SETTINGS", Color.blue, Color.orange);
+
+    //makes gui with health bar, money and score in top right
+	GUI = new backgroundGUI(new Color(150, 150, 150), GUI_OFFSET, 0, 350, 60); 
+	playerHealthBar = new healthBar(GUI_OFFSET+10, 30, 200, 20, 2000, Color.green);
+	healthText = new regularText("HEALTH", GUI_OFFSET + 10, 25, new Color(234, 63, 63), "25px Arial")
+	scoreCount = new scoreText("SCORE: ", GUI_OFFSET + 220, 47.5, 0, Color.yellow, "20px Arial");
+	currencyCount = new scoreText("BANK$: ", GUI_OFFSET + 220, 27.5, currency, new Color(21, 94, 19), "20px Arial");
+
+} catch(e) {
+        //catches any errors to prevent crashing the game
+	    console.log(e);
+    }
+}
+
+
+//counts score, updates it and slowly reduces light over time
+function counter() {
+
+    if (paused) {
+         return;
+    }
+
+	if (!gameOver) {
+    
+        light -= 0.0001;
+    
+		score++;
+		scoreCount.update(score);
+	
+	}
+
+}
+
+//generates asteroids every 2 and a half seconds 
+function asteroidLoop() {
+	
+    // if it's paused, dont continue
+    if (paused) {
+         return;
+    }
+    
+    //makes a number of asteroids depending on current position in asteroid field
+	var n = -1;
+	while (n<Math.floor(difficulty%(startDifficulty))) {
+
+		new asteroid();
+		n++;
+        //increase difficulty to shift position in asteroid field
+		difficulty+=0.05;
+
+	}
+    
+    //by using modulus, you can create the effect of a cycle of asteroids. It becomes increasingly harder until it drops off and becomes easy
+
+}
+
+//moves bullets
+function bulletUpdate() {
+
+    if (paused) {
+         return;
+    }
+
+	for (var bullet of bullets) {
+		bullet.update();
+	}
+}
+
+//moves player depending on player input
+function gameLoop() {
+
+    if (paused) {
+         return;
+    }
+
+	if (!gameOver) {
+		if (up) {
+
+			moveRocket(0, -playerSpeed);
+		
+		}
+
+		if (down) {
+
+			moveRocket(0, playerSpeed);
+		
+		}
+        //checks for collision
+		collision();
+	}
+
+}
+
+//handles clicks and refers it to the checkMenu function
+function clickHandler(e) {
+	checkMenu(e);
+
+}
+
+//updates the asteroids positions
+function asteroidUpdate() {
+
+    if (paused) {
+         return;
+    }
+
+	for (var asteroid of asteroids) {
+		
+		asteroid.update(-2);
+	}
+
+}
+
+//checks if the player is colliding with the edge of the screen
+function collision() {
+
+	var playerobj = player[0];
+		if (playerobj.y < 0) {
+			moveRocket(0, playerSpeed);
+		}
+		if (playerobj.y + 8.5*BLOCK_WIDTH > HEIGHT) {
+			moveRocket(0, -playerSpeed);
+		}
+}
+
+//rounds a number (arbitrary function for general use)
+function round(value, decimals) {
+  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
+}
+
+//Moves the rocket up and down (no need for right and left)
+function moveRocket(xvel, yvel) {
+
+    if (paused) {
+         return;
+    }
+
+	for(var i = 0; i<player.length; i++) {
+			player[i].move(xvel, yvel);
+	}
+
+	for(var i = 0; i<cannons.length; i++) {
+		cannons[i].move(xvel, yvel);
+	}
+
+}
+
+//Calculates the amount of light each asteroid should recieve depending on its position
+function calculateLight(x,y) {
+
+	var dist = CodeHSGraphics.prototype.getDistance(x,y, player[(player.length-1)/2].getX(), player[(player.length-1)/2].getY());
+
+	return (1/Math.pow(((dist*20)/1000), 0.8)) * light;
+
+}
+
+//Draws the rocket according to the player grid and stores it in player
+function drawRocket(grid, x, y) {
+
+	for(var i = 0; i<grid.numCols(); i++) {
+		for(var j = 0; j<grid.numRows(); j++) {
+			var obj = grid.get(j, i);
+			if (obj >= 0) {
+				if (obj == 1) {
+					var rect = new Rectangle(BLOCK_WIDTH, BLOCK_WIDTH);
+					rect.setPosition(i*BLOCK_WIDTH + x, j*BLOCK_WIDTH + y);
+					rect.setColor(new Color(255, 18, 18));
+					add(rect);
+					player.push(rect);	
+				}
+				if (obj == 2) {
+					var rect = new Rectangle(BLOCK_WIDTH, BLOCK_WIDTH);
+					rect.setPosition(i*BLOCK_WIDTH + x, j*BLOCK_WIDTH + y);
+					rect.setColor(new Color(150, 150, 150));
+					add(rect);
+					player.push(rect);	
+				}
+				if (obj == 3) {
+					var rect = new Rectangle(BLOCK_WIDTH, BLOCK_WIDTH);
+					rect.setPosition(i*BLOCK_WIDTH + x, j*BLOCK_WIDTH + y);
+					rect.setColor(new Color(100, 100, 100));
+					add(rect);
+					player.push(rect);	
+				}
+				if (obj == 4) {
+					var rect = new Rectangle(BLOCK_WIDTH, BLOCK_WIDTH);
+					rect.setPosition(i*BLOCK_WIDTH + x, j*BLOCK_WIDTH + y);
+					rect.setColor(new Color(142, 213, 255));
+					add(rect);
+					player.push(rect);	
+				}
+				if (obj == 5) {
+					var rect = new Rectangle(BLOCK_WIDTH, BLOCK_WIDTH);
+					rect.setPosition(i*BLOCK_WIDTH + x, j*BLOCK_WIDTH + y);
+					rect.setColor(new Color(255, 20, 20));
+					add(rect);
+					player.push(rect);	
+				}
+				if (obj == 6) {
+					var rect = new Rectangle(BLOCK_WIDTH, BLOCK_WIDTH);
+					rect.setPosition(i*BLOCK_WIDTH + x, j*BLOCK_WIDTH + y);
+					rect.setColor(new Color(255, 140, 0));
+					add(rect);
+					player.push(rect);	
+				}
+				if (obj == 7) {
+					var rect = new Rectangle(BLOCK_WIDTH, BLOCK_WIDTH);
+					rect.setPosition(i*BLOCK_WIDTH + x, j*BLOCK_WIDTH + y);
+					rect.setColor(new Color(255, 238, 0));
+					add(rect);
+					player.push(rect);	
+				}
+			}
+
+        	}
+
+	}
+
+}
+
+//Handles events when the player presses a key down(for moving up and down)
+function keyDown(e) {
+
+	if (!gameOver && !paused) {
+		if (e.keyCode == 38 || e.keyCode == 87) {
+
+			up = true;
+			down = false;
+
+		}
+		if (e.keyCode == 40 || e.keyCode == 83) {
+
+			up = false;
+			down = true;
+
+		}
+	}
+
+}
+
+//handles events for when the key is lifted up (mostly for stopping the rockets movement and shooting)
+function keyUp(e) {
+
+    if (paused) {
+         return;
+    }
+
+	if (e.keyCode == 38 || e.keyCode == 87) {
+
+		up = false;
+
+	}
+	if (e.keyCode == 40 || e.keyCode == 83) {
+
+		down = false;
+
+	}
+    
+    if (e.keyCode == 32) {
+			shoot();
+	}
+
+}	
+
+//Creates asteroids that travel through space and handle their own events
+class asteroid {
+
+    //initializes the asteroid with all its variables and draws it
+	constructor() {
+		this.x = Randomizer.nextInt(WIDTH, WIDTH + WIDTH/2 );
+		this.y = Randomizer.nextInt(0, HEIGHT);
+		this.size = (difficulty%(startDifficulty/5)) + startDifficulty;
+        this.hardness = difficulty/startDifficulty;
+
+		this.rocks = [];
+
+		var n = -1;
+		while (n<(Math.floor((difficulty%(startDifficulty/5) + startDifficulty/2)))) {
+			var dx = Randomizer.nextInt(-this.size*5, this.size*5);
+			var dy = Randomizer.nextInt(-this.size*5, this.size*5);
+
+			this.rocks.push(new rock(this.x + dx, this.y + dy, this));
+			n++;
+
+		}
+
+		asteroids.push(this);
+
+	}
+
+    //updates the asteroid with a velocity to travel this frame
+	update(vel) {
+
+		for (var rock of this.rocks) {
+			rock.obj.move(vel,0);
+			rock.update();
+		}
+
+		this.x -= -vel;
+
+		if (this.x < -200) {
+
+			this.destroy();
+			asteroids.splice(asteroids.indexOf(this), 1);
+
+		}
+
+
+	}
+
+    //destroys the asteroid (usually when it is offscreen)
+	destroy() {
+
+		for (var rock of this.rocks) {
+			remove(rock.obj);
+		}
+
+	}
+
+	
+
+}
+
+//rocks that are part of every asteroid and handle their own events
+class rock {
+
+    //makes the rock
+	constructor(x, y, asteroid) {
+		this.x = x;
+		this.y = y;
+		this.size = asteroid.size*5;
+		this.asteroid = asteroid;
+        this.health = asteroid.hardness;
+
+		this.obj = new Circle(this.size);
+		this.obj.setColor(Color.createFromRGBL(Math.min(198 + this.health*10, 255), Math.min(169 + this.health*10, 255), Math.min(123 + this.health*10, 255), Math.min(calculateLight(this.obj.x, this.obj.y), 0.7)));
+		this.obj.setPosition(this.x, this.y);
+		add(this.obj);
+		
+	}
+
+    //updates its color and checks itself
+	update() {
+    if (Math.min(198 + this.health*10, 255) >=255) {
+    
+        this.obj.setColor(Color.createFromRGBL(Math.min(198 + this.health*10, 255), Math.min(198 + this.health*10, 255), Math.min(198 + this.health*10, 255), Math.min(calculateLight(this.obj.x, this.obj.y), 0.7)));
+    
+    } else {
+		this.obj.setColor(Color.createFromRGBL(Math.min(198 + this.health*10, 255), Math.min(169 + this.health*10, 255), Math.min(123 + this.health*10, 255), Math.min(calculateLight(this.obj.x, this.obj.y), 0.7)));
+	}
+        this.check();
+
+	}
+    //destroys the rock and handles removing it from the array
+	destroy() {
+		remove(this.obj );
+		this.asteroid.rocks.splice(this.asteroid.rocks.indexOf(this), 1);
+	}
+    
+    //hurts the rock in order to determine wether it should be removed
+    hurt(object) {
+    console.log(this.health);
+        this.health-=object.damage;
+        if (this.health <= 0) {
+              this.destroy();
+        }
+    
+    }
+    
+    //checks the rocks conditions with bullets and the player.. If it collides with a bullet, the bullet is destroyed and the rock is hurt by the bullet's damage
+    // If the rock hits the ship, the ship is damaged and they lose light!
+	check() {
+		for (var object of bullets) {
+
+			if (CodeHSGraphics.prototype.getDistance(object.obj.x, object.obj.y, this.obj.x, this.obj.y) < this.size + object.size) {
+                
+				this.hurt(object);
+                object.destroy();
+				score++;
+				scoreCount.update(score);
+				currency++;
+				currencyCount.update(currency);
+				return;
+				
+			}
+		}
+
+		if (CodeHSGraphics.prototype.getDistance(player[Math.floor(player.length/2)].x, player[Math.floor(player.length/2)].y, this.obj.x, this.obj.y) < this.size + PLAYER_SIZE) {
+			if (playerHealthBar.width <= 0) {
+				if (!gameOver) {
+					gameOverText = new display("GAME OVER!", Color.white);
+					stopTimer(gameLoop);
+					remove(playerHealthBar.obj);
+					gameOver = true;
+				}
+			} else {
+				playerHealthBar.decrease();
+                light-=0.0004;
+			}
+		}
+
+		
+	}
+
+}
+
+//Creates shots that come from the turret along with shooting noises
+function shoot() {
+
+    if (paused) {
+         return;
+    }
+
+	var shootNoise = new Audio("https://s0.vocaroo.com/media/download_temp/Vocaroo_s0hlTLrDpdVE.mp3");
+	shootNoise.play();
+
+	try {
+	     for (var turret of cannons) {
+             bullets.push(new bullet(turret));
+	     }
+	} catch(e) {
+		console.log(e);
+	}
+
+}
+
+//tells each menu to handle their clicks and passes the mouse info
+function checkMenu(e) {
+	
+	for (var menu of buttons) {
+		menu.handleClick(e);
+	}
+
+}
+
+//creates a new turret object
+function createTurret(){
+	new turret();
+
+}
+
+//Creates the turret 
+class turret {
+
+	constructor() {
+
+		this.y = Randomizer.nextInt(player[0].y, player[0].y + 8.5*BLOCK_WIDTH);
+		this.x = Randomizer.nextInt(player[0].x + 23*BLOCK_WIDTH, player[0].x + 27*BLOCK_WIDTH);
+
+		this.cannon = new Rectangle(10, 5);
+		this.cannon.setPosition(this.x, this.y);
+		this.cannon.setColor(Color.blue);
+		add(this.cannon);
+
+		this.cannon1 = new Rectangle(5, 2);
+		this.cannon1.setPosition(this.x+ 8, this.y+1.5);
+		this.cannon1.setColor(Color.GREY);
+		add(this.cannon1);
+
+
+		cannons.push(this);
+		
+
+	}
+
+    //moves the turret with the ship
+	move(xvel, yvel) {
+		this.cannon.move(xvel, yvel);
+		this.cannon1.move(xvel, yvel);
+		this.x += xvel;
+		this.y += yvel;
+	}
+
+}
+
+//Creates bullets that shoots out of the turrets
+class bullet {
+
+	constructor(turret) {
+		this.x = turret.x;
+		this.y = turret.y;
+		this.size = 5;
+        this.damage = bulletDamage;
+		this.obj = new Circle(this.size);
+        if ((bulletDamage*20) < 255) {
+             this.obj.setColor(new Color(255, Math.max(255-(bulletDamage*20), 0), 63));
+        } else {
+             this.obj.setColor(new Color(255, Math.min((bulletDamage*20), 255), Math.min((bulletDamage*20), 255)));
+        }
+		this.obj.setPosition(this.x, this.y);
+		add(this.obj);
+
+	}
+
+    //moves the bullets and handles destroying it when it goes offscreen
+	update() {
+
+		this.obj.move(5, 0);
+		this.x += 5;
+		if(this.obj.x > WIDTH+100 ) {
+			this.destroy();
+		}
+	}
+
+    //destroys the bullet
+	destroy() {
+		remove(this.obj);
+		bullets.splice(bullets.indexOf(this), 1);
+	}
+
+}
+
+//This creates the health bar that drops when you hit an asteroid
+class healthBar {
+
+	constructor(x, y, width, height, health, color){
+		
+		this.increment = width / health;
+		this.width = width;
+        this.initialWidth = width;
+		this.height = height;
+		this.health = health;
+		this.color = color;
+		this.x = x;
+		this.y = y;
+
+		this.obj = new Rectangle(this.width, this.height);
+		this.obj.setPosition(this.x, this.y);
+		this.obj.setColor(this.color);
+		add(this.obj);
+	
+	}
+
+    //moves the health bar (not used but still an option for shaking it in the future!)
+	move(xvel, yvel) {
+		this.obj.move(xvel, yvel);
+
+	}
+
+    //Destroys the healthbar to redraw it
+	destroy() {
+
+		remove(this.obj);
+
+	}
+
+    //redraws the healthbar with a certain width and health
+	appear(health, width) {
+
+		this.health = health;
+		this.width = width;
+		this.obj = new Rectangle(this.width, this.height);
+		this.obj.setPosition(this.x, this.y);
+		this.obj.setColor(this.color);
+		add(this.obj);
+
+	}
+
+    //decreases the amount of health in the health bar
+	decrease() {
+
+		this.destroy();
+		this.appear(this.health - this.increment, this.width - this.increment);
+		
+	}
+    
+    //increases the amount of health in the health bar
+    increase() {
+
+		this.destroy();
+		this.appear(this.health + this.increment, this.width + this.increment);
+		
+	}
+
+}
+
+//Creates the text for score and bank (versitile class)
+class scoreText {
+	constructor(text, x, y, amount, color, font) {
+		this.x = x;
+		this.y = y;
+		this.amount = amount;
+		this.represent = text;
+		this.text = new Text(this.represent + amount.toString(), font);
+    		this.text.setPosition(this.x,this.y);
+		this.text.setColor(color);
+    		add(this.text);
+	}
+
+	//updates the score text
+	update(amount) {
+    		this.text.setText(this.represent + amount.toString());
+    
+	}
+
+    //removes the score text
+	destroy() {
+                remove(this.text);
+        }
+
+}
+
+//Creates the regular text like for the HEALTH or instructions
+class regularText {
+        constructor(text, x, y, color, font) {
+                this.x = x;
+                this.y = y;
+                this.represent = text;
+                this.text = new Text(this.represent, font);
+                this.text.setPosition(this.x,this.y);
+                this.text.setColor(color);
+                add(this.text);
+        }
+
+        //destroys the regular text
+        destroy() {
+		remove(this.text);
+	}
+
+}
+
+//displays a text in the middle of the screen (for game over)
+class display {
+
+	constructor(text, color) {
+    		this.message = text;
+    		this.text = new Text(this.message, "30px Arial");
+    		this.text.setPosition(getWidth()/2 - this.text.getWidth()/2, getHeight()/2 - this.text.getHeight()/2);
+		this.text.setColor(color);
+    		add(this.text);
+	}
+
+    //removes the text
+	delete() {
+		remove(this.text);
+	}
+    
+}
+
+//This function creates a background for easy graphics
+class backgroundGUI {
+
+	constructor(color, x, y, width, height) {
+		this.color = color;
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+			
+		this.obj = new Rectangle(this.width, this.height);
+		this.obj.setColor(this.color);
+		this.obj.setPosition(this.x, this.y);
+		add(this.obj);
+
+	}
+
+    //deletes the background
+	delete() {
+		remove(this.obj);
+
+	}
+
+}
+
+//makes a versatile menu that handles itself and all the buttons passed in
+function menu(x, y, buttonList, space, direction, color, fontColor, openText, closeText, openColor, closeColor) {
+    
+    //initializes variables
+    this.x = x;
+    this.y = y;
+    this.buttonList = buttonList;
+    this.space = space;
+    this.height = buttonList[0].height;
+    this.width = buttonList[0].width;
+    this.direction = direction;
+    this.openText = openText;
+    this.closeText = closeText;
+    this.openColor = openColor;
+    this.closeColor = closeColor;
+    
+    //creates opening function for when the menu button is pressed
+    this.openFunc = function() {
+    
+        if (!paused) {
+            paused = true;
+        }
+        menusOpen++;
+        
+        
+    
+        this.menu.button.text.setText(this.menu.closeText);
+        this.menu.button.text.setPosition(this.menu.x + this.menu.width/2 - this.menu.button.text.getWidth()/2, this.menu.button.text.getY());
+        this.menu.open();
+        this.func = this.menu.closeFunc;
+
+
+        
+    };
+    
+    //creates closing function for when the menu button is pressed again to close it
+    this.closeFunc = function() {
+    
+        menusOpen--;
+        if (menusOpen < 1) {
+            paused = !paused;
+            menusOpen = 0;
+        }
+        
+        this.menu.button.text.setText(this.menu.openText);
+        this.menu.button.text.setPosition(this.menu.x + this.menu.width/2 - this.menu.button.text.getWidth()/2, this.menu.button.text.getY());
+        this.menu.close();
+        this.func = this.menu.openFunc;
+        
+    };
+    
+    //sets function in order to show all buttons in correct places
+    this.open = function() {
+        
+      for(var i = 0; i < this.buttonList.length; i++) {
+          
+          if (this.direction == 0) {
+            this.buttonList[i].setPosition(this.x, this.y - ((this.space * i) + (i * this.height)) - this.space - this.height);
+          } else {
+               this.buttonList[i].setPosition(this.x, this.y + ((this.space * i) + (i * this.height)) + this.space + this.height);
+          }
+          this.buttonList[i].add();
+          
+      }  
+        
+        this.button.obj.setColor(this.closeColor);
+        
+    };
+    
+    //sets all buttons to inactive
+    this.close = function() {
+        
+      for(var i = 0; i<buttonList.length; i++) {
+          
+          this.buttonList[i].remove();
+          
+      }  
+      
+       this.button.obj.setColor(this.openColor);
+        
+    };
+    
+    this.button = new button(this.x, this.y, 200, 40, color, this.openText, "24px Arial", fontColor, this);
+    this.button.obj.setColor(this.openColor);
+    this.button.func = this.openFunc;
+    this.button.add();
+    
+    
+    
+}
+
+//creates a button that handles itself with its own functions
+function button(x, y, width, height, color, text, font, fontColor, MENU) {
+    
+        //creates variables 
+        this.width = width;
+        this.height = height;
+        this.added = false;
+        this.menu = MENU;
+        
+        //makes button object
+        this.obj = new Rectangle(width, height);
+        this.obj.setColor(color);
+        this.obj.setPosition(x,y);
+        
+        //makes text on button
+        this.text = new Text(text, font);
+        this.text.setColor(fontColor);
+        //this.text.setPosition(x + this.text.getWidth()/3,y + this.text.getHeight() + 5);
+	    this.text.setPosition(x + this.width/2 - this.text.getWidth()/2, y + this.height - this.text.getHeight()/2); 
+        
+        //sets click handling to check if it is clicking it.. if so, it calls the function defined when the button is created
+        this.handleClick = function(e) {
+            
+            var x = e.getX();
+            var y = e.getY();
+            
+            var clicked = x > this.obj.x && x < this.obj.x + this.width && y > this.obj.y && y < this.obj.y + this.height && this.added;   
+            
+            if (clicked) {
+                try {
+                this.func();
+                } catch(e) {
+                    
+                }
+            }
+            
+        };
+        
+        //sets the position of the button
+        this.setPosition = function(x, y) {
+             this.obj.setPosition(x,y);
+             this.text.setPosition(x + this.width/2 - this.text.getWidth()/2,y + this.text.getHeight() + 5);
+        };
+        
+        //adds the button
+        this.add = function() {
+            this.added = true;
+          add(this.obj);
+          add(this.text);
+            
+        };
+        
+        //removes the button
+        this.remove = function() {
+            
+            this.added = false;
+            remove(this.obj);
+            remove(this.text);  
+            
+        };
+        
+        //a blank function to be set by the programmer when the class is initialized (run when the button is active and clicked)
+        this.func = function() {
+            
+            
+        };
+        
+        //pushes the button to a button list to be checked.
+        buttons.push(this);
+    
+}
+
+//restarts the game.. only works when run on a actual server or local. Google sites has sandboxed the program so this command no longer works.
+function restart() {
+
+   location.reload();
+
+}
+
+//pauses the game
+function pause() {
+
+   paused = !paused;
+
+}
+
+//Learning about classes (a quick lesson so that everyone was on the right page..also useful for debugging)
+/*
+new Rectangle(300, 300);
+var example = new exampleclass(7);
+
+example.print(example.a);
+
+OUTPUT
+CONSOLE:
+7
+
+class exampleclass {
+
+	constructor(a) {
+		this.a = a;
+
+	}
+
+	print(text) {
+		console.log(text);
+
+	}
+
+}
+*/
+
+
+
+//runs the start function now that everything has been initialized
+    if (typeof start === 'function') {
+        start();
+    }
+};
+</script>
+
+</body>
+</html>
+
+

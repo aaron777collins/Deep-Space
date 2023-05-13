@@ -1,5 +1,7 @@
 # Deep Space
  A simple game where you fly through an asteroid field
+ 
+ I made this game in highschool for a grade 11 final project.
 
  - Includes a shop and Indiana Jones background music (the music is now broken)
  - Written in JavaScript
